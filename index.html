@@ -1,233 +1,187 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JS Challenge Game</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>Runtime Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --accent: #4895ef;
-            --dark: #1b263b;
-            --light: #f8f9fa;
-            --success: #4cc9f0;
-            --error: #f72585;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            --primary: #ff7b29;
+            --bg: #0d1117;
+            --text: #f0f0f0;
+            --border: #30363d;
+            --highlight: rgba(255, 123, 41, 0.1);
         }
         
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--dark);
-            color: var(--light);
+            font-family: 'Mona Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
-            padding: 2rem;
-            background: linear-gradient(135deg, var(--dark) 0%, #2a3a5e 100%);
+            overflow: hidden;
+            letter-spacing: -0.01em;
+            line-height: 1.5;
         }
         
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            animation: fadeIn 0.5s ease-out;
-        }
-        
-        header {
+        .runtime-message {
+            font-size: 1.8rem;
+            font-weight: 600;
             text-align: center;
-            margin-bottom: 2rem;
+            padding: 30px;
+            border-radius: 12px;
+            background-color: rgba(13, 17, 23, 0.8);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(1, 4, 9, 0.5);
+            color: var(--primary);
         }
         
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(to right, var(--accent), var(--success));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+        .challenge-container {
+            display: none;
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
-        .subtitle {
-            color: rgba(255,255,255,0.7);
-            font-weight: 300;
+        .challenge-box {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(1, 4, 9, 0.6);
+            border: 1px solid var(--border);
         }
         
-        .challenge-card {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .challenge-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-        }
-        
-        .challenge-card.completed {
-            border-left: 5px solid var(--success);
-        }
-        
-        .challenge-card.active {
-            border-left: 5px solid var(--accent);
-            animation: pulse 2s infinite;
-        }
-        
-        h2 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: var(--accent);
-        }
-        
-        .challenge-desc {
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-        }
-        
-        .code-block {
-            background: rgba(0,0,0,0.3);
-            padding: 1rem;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            margin: 1rem 0;
-            position: relative;
+        .loading-bar {
+            height: 4px;
+            background: rgba(255, 123, 41, 0.2);
+            border-radius: 4px;
+            margin: 28px 0;
             overflow: hidden;
         }
         
-        .code-block::after {
-            content: "»";
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--accent);
-            font-size: 1.5rem;
-            animation: blink 1.5s infinite;
-        }
-        
-        .status {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 500;
-            margin-top: 1rem;
-        }
-        
-        .status.pending {
-            background: rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.7);
-        }
-        
-        .status.success {
-            background: rgba(76,201,240,0.2);
-            color: var(--success);
-            animation: celebrate 0.5s ease;
-        }
-        
-        .tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: help;
-            border-bottom: 1px dashed rgba(255,255,255,0.5);
-        }
-        
-        .tooltip-text {
-            visibility: hidden;
-            width: 200px;
-            background-color: var(--dark);
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 0.5rem;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.9rem;
-            font-weight: normal;
-        }
-        
-        .tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
+        .loading-progress {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, #ff7b29, #ffa01c);
+            border-radius: 4px;
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(67,97,238,0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(67,97,238,0); }
-            100% { box-shadow: 0 0 0 0 rgba(67,97,238,0); }
-        }
-        
-        @keyframes blink {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.6; }
         }
         
-        @keyframes celebrate {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background: var(--primary);
+            vertical-align: middle;
+            margin-left: 4px;
+            animation: pulse 1s infinite;
         }
         
-        .progress-container {
-            width: 100%;
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            margin: 2rem 0;
-            overflow: hidden;
+        .challenge-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--primary);
+            letter-spacing: -0.015em;
         }
         
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(to right, var(--primary), var(--success));
-            border-radius: 4px;
-            transition: width 0.5s ease;
+        .status-text {
+            font-size: 1rem;
+            color: rgba(240, 240, 240, 0.8);
+            margin-top: 16px;
+        }
+        
+        .ascii-art {
+            color: var(--primary);
+            font-family: monospace;
+            line-height: 1.3;
+            margin: 20px 0;
+            white-space: pre;
+            font-size: 0.7rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Адресный JS Challenge</h1>
-            <p class="subtitle">Используйте адресную строку для решения задач</p>
-            <div class="progress-container">
-                <div class="progress-bar" id="progressBar"></div>
+    <div class="runtime-message" id="runtimeMessage">
+        djmanager 45 runtime<span class="cursor"></span>
+    </div>
+    
+    <div class="challenge-container" id="challengeContainer">
+        <div class="challenge-box">
+            <div class="challenge-title">Verification Required</div>
+            <div class="ascii-art">
+  _____ _     _        _   _              
+ / ____| |   (_)      | | | |             
+| (___ | |__  _ ___   | |_| | __ _ _ __   
+ \___ \| '_ \| / __|  |  _  |/ _` | '_ \  
+ ____) | | | | \__ \  | | | | (_| | | | | 
+|_____/|_| |_|_|___/  |_| |_|\__,_|_| |_|
             </div>
-        </header>
-        
-        <div class="challenge-card" id="challenge1">
-            <h2>Challenge 1: Базовый токен</h2>
-            <p class="challenge-desc">Добавьте следующий код в адресную строку после текущего URL:</p>
-            <div class="code-block">we3=tokenailready=example.com</div>
-            <div class="status pending">Ожидание выполнения...</div>
-        </div>
-        
-        <div class="challenge-card hidden" id="challenge2">
-            <h2>Challenge 2: Редирект токен</h2>
-            <p class="challenge-desc">Добавьте этот шаблон в адресную строку для создания редиректа:</p>
-            <div class="code-block">we15=tokenstopready=example.com=to=example.org</div>
-            <div class="status pending">Ожидание выполнения...</div>
+            <div class="loading-bar">
+                <div class="loading-progress" id="loadingProgress"></div>
+            </div>
+            <div class="status-text">Validating security token...</div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const url = window.location.href;
+            const runtimeMessage = document.getElementById('runtimeMessage');
+            const challengeContainer = document.getElementById('challengeContainer');
+            const loadingProgress = document.getElementById('loadingProgress');
+            
+            // Check for challenge patterns in URL
+            if (url.includes('we3=tokenailready=') || url.includes('we15=tokenstopready=')) {
+                runtimeMessage.style.display = 'none';
+                challengeContainer.style.display = 'block';
+                
+                // Simulate verification process
+                let progress = 0;
+                const loadingInterval = setInterval(() => {
+                    progress += Math.random() * 25;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(loadingInterval);
+                        
+                        // Process redirect after verification
+                        setTimeout(() => {
+                            if (url.includes('we15=tokenstopready=')) {
+                                const parts = url.split('we15=tokenstopready=')[1].split(/[?#]/)[0];
+                                if (parts.includes('=to=')) {
+                                    const [_, toDomain] = parts.split('=to=');
+                                    if (toDomain) {
+                                        window.location.href = 'https://' + toDomain;
+                                    }
+                                }
+                            } else {
+                                const domain = url.includes('we3=tokenailready=') 
+                                    ? url.split('we3=tokenailready=')[1].split(/[?#]/)[0] 
+                                    : 'example.com';
+                                window.location.href = 'https://' + domain;
+                            }
+                        }, 600);
+                    }
+                    loadingProgress.style.width = `${progress}%`;
+                }, 180);
+            }
+        });
+    </script>
 </body>
 </html>
